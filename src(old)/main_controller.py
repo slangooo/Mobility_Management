@@ -239,35 +239,45 @@ class SimulationController:
 
 
 if __name__ == "__main__":
-    a = SimulationController()
-    # a.generate_plot()
-    # a.set_drones_waypoints(TIME_STEP*20)
-    while 1:
-        a.simulate_time_step()
-        sleep(1)
-        print("======================================================")
-        for _uav in a.base_stations[NUM_MBS:]:
-            # print(_uav.battery.energy_level)
-            # print(_uav.battery.recharge_count)
-            # print(_uav.fso_transceivers[0].received_charge_power)
-            # print(_uav.fso_transceivers[0].link_capacity)
-            _uav.coords.update(Coords3d(500, 500, 200), 5)
-            # print(_uav.coords)
-            print("distance:", _uav.coords.get_distance_to(a.base_stations[0].coords))
-        # for _user in a.users:
-        # _user.rf_transceiver.get_serving_bs_info(recalculate=True)
-        # bs_id, sinr, snr, rx_power, capacity = _user.rf_transceiver.get_serving_bs_info(recalculate=True)
-        # print(lin2db(sinr))
-        # print(_user.coords.get_distance_to(_user.rf_transceiver.serving_bs.coords))
-        # print(_user.coords)
+    sim_controller = SimulationController()
+    sim_controller.simulate_time_step()
+    sim_controller.simulate_time_step()
 
-    # a.mobility_model.generate_model()
-    # print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    # a.simulate_time_step()
-    # for _user in a.users:
-    #     # _user.rf_transceiver.get_serving_bs_info(recalculate=True)
-    #     # print(lin2db(_user.rf_transceiver.get_serving_bs_info(recalculate=True)[1]))
-    #     # print(_user.coords.get_distance_to(_user.rf_transceiver.serving_bs.coords))
-    #     # print(_user.rf_transceiver.serving_bs.coords)
-    #     print(_user.coords)
+
+
+
+
+
+
+
+    # # a.generate_plot()
+    # # a.set_drones_waypoints(TIME_STEP*20)
+    # while 1:
+    #     a.simulate_time_step()
+    #     sleep(1)
     #     print("======================================================")
+    #     for _uav in a.base_stations[NUM_MBS:]:
+    #         # print(_uav.battery.energy_level)
+    #         # print(_uav.battery.recharge_count)
+    #         # print(_uav.fso_transceivers[0].received_charge_power)
+    #         # print(_uav.fso_transceivers[0].link_capacity)
+    #         _uav.coords.update(Coords3d(500, 500, 200), 5)
+    #         # print(_uav.coords)
+    #         print("distance:", _uav.coords.get_distance_to(a.base_stations[0].coords))
+    #     # for _user in a.users:
+    #     # _user.rf_transceiver.get_serving_bs_info(recalculate=True)
+    #     # bs_id, sinr, snr, rx_power, capacity = _user.rf_transceiver.get_serving_bs_info(recalculate=True)
+    #     # print(lin2db(sinr))
+    #     # print(_user.coords.get_distance_to(_user.rf_transceiver.serving_bs.coords))
+    #     # print(_user.coords)
+    #
+    # # a.mobility_model.generate_model()
+    # # print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    # # a.simulate_time_step()
+    # # for _user in a.users:
+    # #     # _user.rf_transceiver.get_serving_bs_info(recalculate=True)
+    # #     # print(lin2db(_user.rf_transceiver.get_serving_bs_info(recalculate=True)[1]))
+    # #     # print(_user.coords.get_distance_to(_user.rf_transceiver.serving_bs.coords))
+    # #     # print(_user.rf_transceiver.serving_bs.coords)
+    # #     print(_user.coords)
+    # #     print("======================================================")

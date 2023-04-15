@@ -1,6 +1,3 @@
-#  Copyright (c) 2023. Salim Janji.
-#   All rights reserved.
-
 import sys
 import time
 from pyqtgraph.Qt import QtCore, QtGui

@@ -1,148 +1,145 @@
 from src.parameters import *
 import numpy as np
 from src.channel_model.rf_a2g import PlosModel
-from src.channel_model.rf_g2g import UmaCellular
+from src.channel_model.rf_g2g import UmaCellular, UmiCellular
 from src.data_structures import Coords3d
 from src.types_constants import StationType
 import types
 from scipy.ndimage.interpolation import shift
+from itertools import compress
 
 
 class RfTransceiver:
+    received_powers = []
+    bs_sinr_cochannel_mask = None
+    bs_cochannel_mask = None
+    bs_list = []
+    cochannel_bs_list = []
+    sinr_cochannel_bs_list = []
     received_sinrs = []
     received_snrs = []
     received_powers = []
+    serving_bss = []
+    max_sinr_idx = None
     serving_bs = None
-    received_sinr = None
-    received_snr = None
-    received_power = None
-    capacity = None
-    min_capacity, max_capacity, mean_capacity = None, None, None
-    min_sinr, max_sinr, mean_sinr = None, None, None
-    sinr_coverage_score = 0
-
+    serving_sinr = None
+    serving_snr = None
+    serving_rx_power = None
 
     def __init__(self, coords: Coords3d, t_power=DRONE_TX_POWER_RF, bandwidth=USER_BANDWIDTH, bs_id=None,
-                 user_id=None, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS, station_type=StationType.UE):
+                 user_id=None, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS):
+
         self.tx_power = t_power
         self.coords = coords
-        self.stations_list = []
         self.noise_power = NOISE_POWER_RF
         self.bandwidth = bandwidth
         self.user_id = user_id
         self.bs_id = bs_id
         self.carrier_frequency = carrier_frequency
-        self.get_path_loss = get_path_loss_function(station_type)
-        self.available_bandwidth = self.bandwidth if station_type != StationType.UE else 0
-        self.n_associated_users = 0
-        self.sinr_coverage_history = np.zeros(USER_SINR_COVERAGE_HIST, dtype=bool)
-        # association_func = get_serving_bs_info_snr if ASSOCIATION_SCHEME == 'SNR' else get_serving_bs_info_sinr
-        # self.get_serving_bs_info = types.MethodType(association_func, self)
+        self.get_path_loss = get_path_loss_function(StationType.UE)
+        self.available_bandwidth = 0
 
     def get_received_powers(self):
-        for bs_idx, bs_set in enumerate(self.stations_list):
-            for idx, bs in enumerate(bs_set):
-                path_loss = bs.get_path_loss(bs.coords, self.coords, bs.carrier_frequency)
-                self.received_powers[bs_idx][idx] = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
-        # self.received_powers = []
-        # for bs_idx, bs_set in enumerate(self.stations_list):
-        #     rx_powers = np.empty(len(bs_set))
-        #     for idx, bs in enumerate(bs_set):
-        #         path_loss = bs.get_path_loss(bs.coords, self.coords, bs.carrier_frequency)
-        #         rx_powers[idx] = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
-        #     self.received_powers.append(rx_powers)
+        for bs_idx, bs in enumerate(self.sinr_cochannel_bs_list):
+            path_loss = bs.get_path_loss(bs.coords, self.coords, bs.carrier_frequency)
+            self.received_powers[bs_idx] = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
 
     def get_received_sinrs(self):
         self.get_received_powers()
-        for set_idx, bs_set in enumerate(self.stations_list):
-            interferences = np.empty(len(bs_set))
-            rx_powers = self.received_powers[set_idx]
-            for idx, _ in enumerate(bs_set):
-                interferences[idx] = np.sum(np.delete(rx_powers, idx))
-            self.received_sinrs[set_idx] = rx_powers / (interferences + self.noise_power)
-            self.received_snrs[set_idx] = rx_powers / self.noise_power
+        for bs_idx, bs in enumerate(self.sinr_cochannel_bs_list):
+            rx_powers = self.received_powers
+            interferences = np.sum(rx_powers) - rx_powers[bs_idx]
+            self.received_sinrs[bs_idx] = rx_powers[bs_idx] / (interferences + self.noise_power)
+            self.received_snrs[bs_idx] = rx_powers[bs_idx] / self.noise_power
 
     def get_received_snrs(self):
         self.get_received_powers()
-        self.received_snrs = []
-        for set_idx, bs_set in enumerate(self.stations_list):
-            self.received_snrs.append(self.received_powers[set_idx] / self.noise_power)
+        for bs_idx, bs in enumerate(self.sinr_cochannel_bs_list):
+            self.received_snrs[bs_idx] = self.received_powers[bs_idx] / self.noise_power
 
-    def set_available_base_stations(self, stations_list):
-        # all_freqs = [_bs.carrier_frequency for _bs in stations_list]
-        # available_freqs = set(all_freqs)
-        # self.stations_list = []
-        # for _freq in available_freqs:
-        #     bs_list = []
-        #     for idx, _freq_bs in enumerate(all_freqs):
-        #         if _freq_bs == _freq:
-        #             bs_list.append(stations_list[idx])
-        #     self.stations_list.append(bs_list)
+    def update_cochannel_bs_mask(self, frequency_condition=None):
+        if frequency_condition is None:
+            self.bs_cochannel_mask = np.ones(len(self.stations_list), dtype=bool)
+        else:
+            for idx, _station in enumerate(self.stations_list):
+                if _station.carrier_frequency == frequency_condition:
+                    self.bs_cochannel_mask[idx] = 1
+        self.cochannel_bs_list = list(compress(self.stations_list, self.bs_cochannel_mask))
+
+    def update_sufficient_sinr_cochannel_bs_mask(self, sinr_condition=None):
+        self.bs_sinr_cochannel_mask = np.copy(self.bs_cochannel_mask)
+        self.sinr_cochannel_bs_list = list(compress(self.stations_list, self.bs_cochannel_mask))
+
+        rx_powers = np.zeros(len(self.stations_list))
+        for bs_idx, bs in enumerate(self.stations_list):
+            if not self.bs_cochannel_mask[bs_idx]:
+                rx_powers[bs_idx] = 0
+            path_loss = bs.get_path_loss(bs.coords, self.coords, bs.carrier_frequency)
+            rx_powers[bs_idx] = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
+
+        rx_sinr = np.zeros(len(self.stations_list))
+
+        for bs_idx, bs in enumerate(self.stations_list):
+            if not self.bs_cochannel_mask[bs_idx]:
+                rx_powers[bs_idx] = 0
+            interferences = np.sum(rx_powers) - rx_powers[bs_idx]
+            rx_sinr[bs_idx] = rx_powers[bs_idx] / (interferences + self.noise_power)
+
+        for idx, sinr in enumerate(rx_sinr):
+            if sinr < sinr_condition:
+                self.bs_sinr_cochannel_mask[idx] = False
+
+        self.sinr_cochannel_bs_list = list(compress(self.stations_list, self.bs_sinr_cochannel_mask))
+        self.received_sinrs = rx_sinr[self.bs_sinr_cochannel_mask]
+        self.received_powers = rx_powers[self.bs_sinr_cochannel_mask]
+
+    def set_available_base_stations(self, stations_list, sinr_condition=None, frequency_condition=None):
         self.stations_list = stations_list
-        self.received_powers = [np.zeros(len(self.stations_list[i])) for i in range(len(self.stations_list))]
-        self.received_sinrs = [np.zeros(len(self.stations_list[i])) for i in range(len(self.stations_list))]
-        self.received_snrs = [np.zeros(len(self.stations_list[i])) for i in range(len(self.stations_list))]
+        self.update_cochannel_bs_mask(frequency_condition)
+        self.update_sufficient_sinr_cochannel_bs_mask(sinr_condition)
 
-    def get_serving_bs_info(self, recalculate=False):
-        """Defined at initialization. Select SNR association or SINR."""
+    def calculate_serving_bs(self, recalculate=False):
         """Return base_station ID, SINR, SNR, Received Power, Capacity"""
         if recalculate:
             self.get_received_sinrs()
 
-        max_sinrs_idxs = [self.received_sinrs[idx].argmax() for idx in range(len(self.stations_list))]
-        max_idx = np.argmax([self.received_sinrs[idx][max_sinrs_idxs[idx]] for idx in range(len(self.stations_list))])
-        max_sinrs_idx = max_sinrs_idxs[max_idx]
-        self.serving_bs = self.stations_list[max_idx][max_sinrs_idx]
-        self.received_sinr = self.received_sinrs[max_idx][max_sinrs_idx]
-        self.received_snr = self.received_powers[max_idx][max_sinrs_idx] / self.noise_power
-        self.received_power = self.received_powers[max_idx][max_sinrs_idx]
+        self.max_sinr_idx = self.received_sinrs.argmax()
+        self.serving_bs = [self.sinr_cochannel_bs_list[self.max_sinr_idx]]
+        self.serving_sinr = self.received_sinrs[self.max_sinr_idx]
+        self.serving_snr = self.received_powers[self.max_sinr_idx] / self.noise_power
+        self.serving_rx_power = self.received_powers[self.max_sinr_idx]
+
         return self.serving_bs.bs_id, self.received_sinr, self.received_snr, self.received_power
 
-    def update_sinr_coverage_score(self, steps_count):
-        # self.sinr_coverage_score -= self.sinr_coverage_history[0]
-        # self.sinr_coverage_history = shift(self.sinr_coverage_history, -1, cval=self.is_sinr_satisfied())
-        # self.sinr_coverage_score += self.sinr_coverage_history[-1]
-        res = self.is_sinr_satisfied()
-        idx = steps_count%USER_SINR_COVERAGE_HIST
-        self.sinr_coverage_score -= self.sinr_coverage_history[idx]
-        self.sinr_coverage_history[idx] = res
-        self.sinr_coverage_score += res
-
-
-        # self.sinr_coverage_score -= self.sinr_coverage_history[0]
-
-    def update_rf_stats(self, steps_count):
-        bandwidth_share = self.serving_bs.available_bandwidth / self.serving_bs.n_associated_users
-        self.bandwidth = bandwidth_share
-        self.capacity = int(self.bandwidth * np.log2(1 + self.received_sinr))/(1024)
-        self.min_capacity, self.max_capacity = min(self.min_capacity, self.capacity), max(self.max_capacity, self.capacity)
-        self.mean_capacity = self.mean_capacity + (self.capacity - self.mean_capacity)/ steps_count
-        self.min_sinr, self.max_sinr = min(self.min_sinr, self.received_sinr), max(self.max_sinr,
-                                                                                          self.received_sinr)
-        self.mean_sinr = self.mean_sinr + (self.received_sinr - self.mean_sinr) /steps_count
-
-    def get_stats(self):
-        return self.capacity, self.min_capacity, self.max_capacity,\
-               self.received_sinr, self.min_sinr, self.max_sinr
-
     def is_sinr_satisfied(self):
-        return self.received_sinr >= SINR_THRESHOLD
+        return self.received_sinr >= DEFAULT_SINR_THRESHOLD
 
     def is_snr_satisfied(self):
         return self.received_snr >= DEFAULT_SNR_THRESHOLD
 
-    def init_rf_stats(self):
-        bandwidth_share = self.serving_bs.available_bandwidth / self.serving_bs.n_associated_users
-        self.bandwidth = bandwidth_share
-        if not self.mean_capacity:
-            self.mean_capacity = self.bandwidth * np.log2(1 + self.received_sinr)
-        if self.mean_sinr is None:
-            self.mean_sinr = self.received_sinr
 
-        self.min_capacity, self.max_capacity  = self.bandwidth * np.log2(1 + self.received_sinr), \
-                                                                   self.bandwidth * np.log2(1 + self.received_sinr)
+class UserRfTransceiver(RfTransceiver):
+    def __init__(self, coords: Coords3d, t_power=DRONE_TX_POWER_RF, bandwidth=USER_BANDWIDTH, bs_id=None,
+                 user_id=None, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS):
+        super().__init__(coords, t_power=t_power, bandwidth=bandwidth, bs_id=bs_id, user_id=user_id,
+                         carrier_frequency=carrier_frequency)
+        self.get_path_loss = None
 
-        self.min_sinr, self.max_sinr = self.received_sinr, self.received_sinr
+
+class MacroRfTransceiver(RfTransceiver):
+    def __init__(self, coords: Coords3d, t_power=DRONE_TX_POWER_RF, bandwidth=USER_BANDWIDTH, bs_id=None,
+                 user_id=None, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS, station_type=StationType.UMa,
+                 macro_type=StationType.UMa):
+        super().__init__(coords, t_power=t_power, bandwidth=bandwidth, bs_id=bs_id, user_id=user_id,
+                         carrier_frequency=carrier_frequency, station_type=station_type)
+        if macro_type == StationType.UMa:
+            self.get_path_loss = UmaCellular.get_path_loss
+        elif macro_type == StationType.UMi:
+            self.get_path_loss = UmiCellular.get_path_loss
+        elif macro_type == StationType.DBS:
+            self.get_path_loss = PlosModel.get_path_loss
+        else:
+            self.get_path_loss = None
 
 
 def get_path_loss_function(station_type):
@@ -150,47 +147,12 @@ def get_path_loss_function(station_type):
         return None
     elif station_type == StationType.UMa:
         return UmaCellular.get_path_loss
+    elif station_type == StationType.UMi:
+        return UmiCellular.get_path_loss
     elif station_type == StationType.DBS:
         return PlosModel.get_path_loss
     else:
         return None
-
-
-# def get_serving_bs_info_sinr(self, recalculate=False):
-#     """Return base_station ID, SINR, SNR, Received Power, Capacity"""
-#     # TODO: ensure capacity constraints for BSs
-#     if recalculate:
-#         self.get_received_sinrs()
-#
-#     max_sinrs_idxs = [self.received_sinrs[idx].argmax() for idx in range(len(self.stations_list))]
-#     max_idx = np.argmax([self.received_sinrs[idx][max_sinrs_idxs[idx]] for idx in range(len(self.stations_list))])
-#     max_sinrs_idx = max_sinrs_idxs[max_idx]
-#     self.serving_bs = self.stations_list[max_idx][max_sinrs_idx]
-#     self.received_sinr = self.received_sinrs[max_idx][max_sinrs_idx]
-#     self.received_snr = self.received_powers[max_idx][max_sinrs_idx] / self.noise_power
-#     self.received_power = self.received_powers[max_idx][max_sinrs_idx]
-#     self.capacity = self.bandwidth * np.log2(1 + self.received_sinrs[max_idx][max_sinrs_idx])
-#
-#     return self.serving_bs.bs_id, self.received_sinr, self.received_snr, self.received_power, self.capacity
-#
-#
-# def get_serving_bs_info_snr(self, recalculate=False):
-#     """Return base_station ID, SINR, SNR, Received Power, Capacity"""
-#     # TODO: ensure capacity constraints for BSs
-#     if recalculate:
-#         self.get_received_sinrs()
-#
-#     max_snrs_idxs = [self.received_snrs[idx].argmax() for idx in range(len(self.stations_list))]
-#     max_idx = np.argmax([self.received_snrs[idx][max_snrs_idxs[idx]] for idx in range(len(self.stations_list))])
-#     max_snrs_idx = max_snrs_idxs[max_idx]
-#     self.serving_bs = self.stations_list[max_idx][max_snrs_idx]
-#     self.received_sinr = self.received_sinrs[max_idx][max_snrs_idx]
-#     self.received_snr = self.received_powers[max_idx][max_snrs_idx] / self.noise_power
-#     self.received_power = self.received_powers[max_idx][max_snrs_idx]
-#     self.capacity = self.bandwidth * np.log2(1 + self.received_sinrs[max_idx][max_snrs_idx])
-#     # if self.user_id == 0:
-#     #     print(self.coords)
-#     return self.serving_bs.bs_id, self.received_sinr, self.received_snr, self.received_power, self.capacity
 
 
 if __name__ == "__main__":

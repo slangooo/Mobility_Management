@@ -1,6 +1,3 @@
-#  Copyright (c) 2023. Salim Janji.
-#   All rights reserved.
-
 class LinkType:
     A2A = 'Air-to-air'
     A2G = 'Air-to-ground'

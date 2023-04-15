@@ -1,12 +1,10 @@
-#  Copyright (c) 2023. Salim Janji.
-#   All rights reserved.
-
 from dataclasses import dataclass
 import numpy as np
 import timeit
 from scipy.spatial import distance
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+from scipy.spatial import ConvexHull, convex_hull_plot_2d, Delaunay
 from src.math_tools import rotate, line_point_angle, point_inside_prlgm
 
 

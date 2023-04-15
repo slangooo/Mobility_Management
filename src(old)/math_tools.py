@@ -1,9 +1,7 @@
-#  Copyright (c) 2023. Salim Janji.
-#   All rights reserved.
-
 import random
 import numpy as np
 from numpy import degrees, arctan2
+from sympy import *
 
 
 def decision(probability):
@@ -144,8 +142,11 @@ def newton_raphson(f, fderivative, variable, initial_guess=1, max_error=1e-15, m
     error = 10
     iter = 0
     while error > max_error and iter < max_iter:
+        # f_prev = float(f.evalf(subs={variable: xn}))
         xn = xn - float(f.evalf(subs={variable: xn})) / float(fderivative.evalf(subs={variable: xn}))
+        # error = abs(f_prev - float(f.evalf(subs={variable: xn})))
         error = float(f.evalf(subs={variable: xn}))
+        # print(error, xn)
         iter+=1
 
     return xn, float(f.evalf(subs={variable: xn}))
