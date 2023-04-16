@@ -25,12 +25,11 @@ class UmaCellular:
 
         breakpoint_distance = 4 * effective_bs_height * effective_ue_height * carrier_freq / speed_of_light
 
-        pl1 = 28 + 22 * np.log10(distance_3d) + 20 * np.log10(carrier_freq)
-
         # Make constant for margin calculations
         shadowing_los = np.random.lognormal(sigma=db2lin(4))
 
         if distance_2d <= breakpoint_distance:
+            pl1 = 28 + 22 * np.log10(distance_3d) + 20 * np.log10(carrier_freq)
             path_loss_los = pl1 + shadowing_los
         else:
             pl2 = 28 + 40 * np.log10(distance_3d) + 20 * np.log10(carrier_freq) - 9 * np.log10(
@@ -92,12 +91,11 @@ class UmiCellular:
 
         breakpoint_distance = 4 * effective_bs_height * effective_ue_height * carrier_freq / speed_of_light
 
-        pl1 = 32.4 + 21 * np.log10(distance_3d) + 20 * np.log10(carrier_freq)
-
         # Make constant for margin calculations
         shadowing_los = np.random.lognormal(sigma=db2lin(4))
 
         if distance_2d <= breakpoint_distance:
+            pl1 = 32.4 + 21 * np.log10(distance_3d) + 20 * np.log10(carrier_freq)
             path_loss_los = pl1 + shadowing_los
         else:
             pl2 = 32.4 + 40 * np.log10(distance_3d) + 20 * np.log10(carrier_freq) - 9.5 * np.log10(
