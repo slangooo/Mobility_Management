@@ -62,55 +62,55 @@ class UserSpatialModel:
 
     def __init__(self, ):
         pass
-
-
-class ThomasClusterProcess(UserSpatialModel):
-    n_clusters = 0
-    n_ues_per_cluster = None
-    clusters_centers = None
-    n_users = 0
-
-    def __init__(self, mean_ues_per_cluster=MEAN_UES_PER_CLUSTER):
-        self.rng = np.random.default_rng()
-        self.generate_distribution(mean_ues_per_cluster)
-
-    def populate_num_of_clusters(self):
-        self.n_clusters = self.rng.poisson(N_CLUSTERS)
-
-    def populate_num_of_ues_per_cluster(self, mean_ues_per_cluster):
-        self.n_ues_per_cluster = self.rng.poisson(mean_ues_per_cluster, (self.n_clusters))
-        self.n_users = self.n_ues_per_cluster.sum()
-
-    def generate_distribution(self, mean_ues_per_cluster=MEAN_UES_PER_CLUSTER):
-        self.populate_num_of_clusters()
-        self.populate_num_of_ues_per_cluster(mean_ues_per_cluster)
-        clusters_xs = (X_BOUNDARY[1] - X_BOUNDARY[0]) * np.random.uniform(0, 1, self.n_clusters)
-        clusters_ys = (Y_BOUNDARY[1] - Y_BOUNDARY[0]) * np.random.uniform(0, 1, self.n_clusters)
-        self.clusters_centers = np.stack((clusters_xs, clusters_ys), 1)
-
-        childs_xs = np.random.normal(0, SIGMA_UE_PER_CLUSTER, self.n_users)
-        childs_ys = np.random.normal(0, SIGMA_UE_PER_CLUSTER, self.n_users)
-
-        self.childs_xs = np.repeat(clusters_xs, self.n_ues_per_cluster)
-        self.childs_ys = np.repeat(clusters_ys, self.n_ues_per_cluster)
-
-        self.childs_xs += childs_xs
-        self.childs_ys += childs_ys
-
-        for uid in range(self.n_users):
-            self.users.append(UserWalker(uid, initial_coords=Coords3d(self.childs_xs[uid], self.childs_ys[uid], UE_HEIGHT)))
-
-    def generate_plot(self):
-        fig, ax = plt.subplots()
-        ax.scatter(self.childs_xs, self.childs_ys, edgecolor='b', facecolor='none', alpha=0.5, marker=".", label="UEs")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_xlim(X_BOUNDARY[0] - 6*SIGMA_UE_PER_CLUSTER,
-                 X_BOUNDARY[1] + 6*SIGMA_UE_PER_CLUSTER)
-        ax.set_ylim(Y_BOUNDARY[0] - 6*SIGMA_UE_PER_CLUSTER,
-                 Y_BOUNDARY[1] + 6*SIGMA_UE_PER_CLUSTER)
-        return fig, ax
-
+#
+#
+# class ThomasClusterProcess(UserSpatialModel):
+#     n_clusters = 0
+#     n_ues_per_cluster = None
+#     clusters_centers = None
+#     n_users = 0
+#
+#     def __init__(self, mean_ues_per_cluster=MEAN_UES_PER_CLUSTER):
+#         self.rng = np.random.default_rng()
+#         self.generate_distribution(mean_ues_per_cluster)
+#
+#     def populate_num_of_clusters(self):
+#         self.n_clusters = self.rng.poisson(N_CLUSTERS)
+#
+#     def populate_num_of_ues_per_cluster(self, mean_ues_per_cluster):
+#         self.n_ues_per_cluster = self.rng.poisson(mean_ues_per_cluster, (self.n_clusters))
+#         self.n_users = self.n_ues_per_cluster.sum()
+#
+#     def generate_distribution(self, mean_ues_per_cluster=MEAN_UES_PER_CLUSTER):
+#         self.populate_num_of_clusters()
+#         self.populate_num_of_ues_per_cluster(mean_ues_per_cluster)
+#         clusters_xs = (X_BOUNDARY[1] - X_BOUNDARY[0]) * np.random.uniform(0, 1, self.n_clusters)
+#         clusters_ys = (Y_BOUNDARY[1] - Y_BOUNDARY[0]) * np.random.uniform(0, 1, self.n_clusters)
+#         self.clusters_centers = np.stack((clusters_xs, clusters_ys), 1)
+#
+#         childs_xs = np.random.normal(0, SIGMA_UE_PER_CLUSTER, self.n_users)
+#         childs_ys = np.random.normal(0, SIGMA_UE_PER_CLUSTER, self.n_users)
+#
+#         self.childs_xs = np.repeat(clusters_xs, self.n_ues_per_cluster)
+#         self.childs_ys = np.repeat(clusters_ys, self.n_ues_per_cluster)
+#
+#         self.childs_xs += childs_xs
+#         self.childs_ys += childs_ys
+#
+#         for uid in range(self.n_users):
+#             self.users.append(UserWalker(uid, initial_coords=Coords3d(self.childs_xs[uid], self.childs_ys[uid], UE_HEIGHT)))
+#
+#     def generate_plot(self):
+#         fig, ax = plt.subplots()
+#         ax.scatter(self.childs_xs, self.childs_ys, edgecolor='b', facecolor='none', alpha=0.5, marker=".", label="UEs")
+#         ax.set_xlabel("x")
+#         ax.set_ylabel("y")
+#         ax.set_xlim(X_BOUNDARY[0] - 6*SIGMA_UE_PER_CLUSTER,
+#                  X_BOUNDARY[1] + 6*SIGMA_UE_PER_CLUSTER)
+#         ax.set_ylim(Y_BOUNDARY[0] - 6*SIGMA_UE_PER_CLUSTER,
+#                  Y_BOUNDARY[1] + 6*SIGMA_UE_PER_CLUSTER)
+#         return fig, ax
+#
 
 if __name__ == '__main__':
     print(N_CLUSTERS)

@@ -58,6 +58,7 @@ class RfTransceiver:
             self.received_snrs[bs_idx] = self.received_powers[bs_idx] / self.noise_power
 
     def update_cochannel_bs_mask(self, frequency_condition=None):
+        # Creates mask of stations list that keeps only stations with carrier frequency specified
         if frequency_condition is None:
             self.bs_cochannel_mask = np.ones(len(self.stations_list), dtype=bool)
         else:
@@ -66,7 +67,8 @@ class RfTransceiver:
                     self.bs_cochannel_mask[idx] = 1
         self.cochannel_bs_list = list(compress(self.stations_list, self.bs_cochannel_mask))
 
-    def update_sufficient_sinr_cochannel_bs_mask(self, sinr_condition=None):
+    def update_sufficient_sinr_cochannel_bs_mask(self, sinr_condition=DEFAULT_SINR_SENSITIVITY_LEVEL):
+        # Creates mask of stations list that keeps only stations with carrier frequency specified and sufficient SINR
         self.bs_sinr_cochannel_mask = np.copy(self.bs_cochannel_mask)
         self.sinr_cochannel_bs_list = list(compress(self.stations_list, self.bs_cochannel_mask))
 
@@ -93,7 +95,7 @@ class RfTransceiver:
         self.received_sinrs = rx_sinr[self.bs_sinr_cochannel_mask]
         self.received_powers = rx_powers[self.bs_sinr_cochannel_mask]
 
-    def set_available_base_stations(self, stations_list, sinr_condition=None, frequency_condition=None):
+    def set_available_base_stations(self, stations_list, sinr_condition=DEFAULT_SINR_SENSITIVITY_LEVEL, frequency_condition=None):
         self.stations_list = stations_list
         self.update_cochannel_bs_mask(frequency_condition)
         self.update_sufficient_sinr_cochannel_bs_mask(sinr_condition)

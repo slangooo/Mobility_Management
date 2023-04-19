@@ -6,8 +6,7 @@ from matplotlib.patches import Rectangle
 import numpy as np
 from src.data_structures import Obstacle
 from src.math_tools import line_point_angle, get_mid_azimuth
-from src.parameters import UAVS_HEIGHTS, SUN_SEARCH_STEP, SUN_SEARCH_COUNT, MBS_LOCATIONS, \
-    EXTEND_TIMES_FOUR
+from src.parameters import EXTEND_TIMES_FOUR
 
 obstacles_madrid_list = [[9, 423, 129, 543, 52.5],
                          [9, 285, 129, 405, 49],
@@ -104,7 +103,6 @@ def get_madrid_buildings():
 
 if __name__ == '__main__':
     _rects = get_madrid_buildings().plot_obstacles(False, fill_color='gray')
-    plt.plot(MBS_LOCATION.x, MBS_LOCATION.y, c='blue', marker='s', label='MBS', linestyle='none')
     ax = plt.gca()
     for _rect in _rects:
         ax.add_patch(_rect)

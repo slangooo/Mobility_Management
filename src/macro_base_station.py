@@ -4,7 +4,7 @@
 from itertools import count
 from src.data_structures import Coords3d
 from src.apparatus.rf_transciever import MacroRfTransceiver
-from src.parameters import MBS_BANDWIDTH, MBS_TX_POWER_RF, DEFAULT_CARRIER_FREQ_MBS, MBS_LOCATION
+from src.parameters import MBS_BANDWIDTH, MBS_TX_POWER_RF, DEFAULT_CARRIER_FREQ_MBS, MBS_LOCATION, DEFAULT_A3_INDIV_OFFSET
 from src.types_constants import StationType
 
 
@@ -18,3 +18,4 @@ class MacroBaseStation:
                                                  bs_id=self.id, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS,
                                                  station_type=station_type)
         self.station_type = StationType.UMa
+        self.a3_meas_indiv_offset = DEFAULT_A3_INDIV_OFFSET
