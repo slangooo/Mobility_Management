@@ -250,7 +250,7 @@ class Obstacle:
                 return True
         return False
 
-    def is_blocking(self, src_x, src_y, azimuth_to_dest, elevation_to_dest, reference_height=0, max_distance=None):
+    def is_blocking(self, src_x, src_y, azimuth_to_dest, elevation_to_dest, reference_height=0):
         if elevation_to_dest < 0:
             return True
         ##########

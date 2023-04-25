@@ -11,7 +11,7 @@ EXTEND_TIMES_FOUR = True
 NUM_OF_USERS = 140
 USER_SPEED = [0.5, 0.8]
 PAUSE_INTERVAL = [0, 60]
-TIME_STEP = 2.5  # Between subsequent users mobility model updates
+TIME_STEP = 100  # ms Between subsequent users mobility model updates
 TIME_SLEEP = 2  # Sleep between updates to allow plotting to keep up
 BUILDINGS_AREA_MARGIN = 50
 SIMULATION_TIME = 60 * 60 * 2
@@ -41,9 +41,14 @@ MBS_TX_POWER_RF = 0.5  # W
 DEFAULT_SINR_THRESHOLD = db2lin(10)
 ASSOCIATION_SCHEME = 'SINR'
 DEFAULT_SINR_SENSITIVITY_LEVEL = db2lin(-10)
+DEFAULT_RX_POWER_SENSITIVITY = db2lin(-300)
 
 #Mobility Management
-DEFAULT_A3_INDIV_OFFSET = 0
+DEFAULT_A3_INDIV_OFFSET = 0 #dB
+DEFAULT_A3_SINR_OFFSET = 5 #dB
+DEAFULT_A3_SINR_HYST = 2 #dB
+DEFAULT_TTT_MS = 1024 #e 0, 40, 64, 80, 100, 128, 160, 256, 320, 480, 512, 640, 1024, 1280, 2560, and 5120 ms.
+DEFAULT_HO_SINR_THRESHOLD = db2lin(-10)
 
 # Channel model FSO
 RX_DIAMETER = 0.2  # m
@@ -67,11 +72,11 @@ AvgGmlLoss = {LinkType.A2G: 3, LinkType.A2A: 3 / 1.5, LinkType.G2G: 5}  # TODO: 
 # BEAMWAIST_RADII = [0.0045, 0.015, 0.0045, 0.015, 0.0045, 0.015, 0.0045, 0.015]
 BEAMWAIST_RADII = [0.01, 0.01, 0.02, 0.02]
 
+UAV_HEIGHT = 25 #m
 MBS_HEIGHT = 25  # m
 UE_HEIGHT = 1.5  # To conform with channel models
 
-# MBS_LOCATION = Coords3d(210, 0, MBS_HEIGHT)
-MBS_LOCATION = Coords3d(400, 0, MBS_HEIGHT)
+MBS_LOCATIONS = [Coords3d(400, 0, MBS_HEIGHT)]
 
 # USER_MOBILITY_SAVE_NAME = 'users_200_truncated'
 USER_MOBILITY_SAVE_NAME = 'extended_4_madrids_500_users'

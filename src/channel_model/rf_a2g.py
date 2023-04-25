@@ -164,7 +164,7 @@ class PlosModel:
         return h, R
 
     @staticmethod
-    def get_coverage_radius(uav_height=UAVS_HEIGHTS[0], min_snr=DEFAULT_SNR_THRESHOLD, transmission_power=DRONE_TX_POWER_RF,
+    def get_coverage_radius(uav_height=UAV_HEIGHT, min_snr=DEFAULT_SNR_THRESHOLD, transmission_power=DRONE_TX_POWER_RF,
                            noise_power=NOISE_POWER_RF, carrier_freq=DEFAULT_CARRIER_FREQ_DRONE,
                            avg_loss_los=PLOS_AVG_LOS_LOSS, avg_loss_nlos=PLOS_AVG_NLOS_LOSS, env_a=PLOS_A_PARAM,
                            env_b=PLOS_B_PARAM, ue_bandwidth=USER_BANDWIDTH, drone_bandwidth=DRONE_BANDWIDTH):

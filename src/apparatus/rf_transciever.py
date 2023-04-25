@@ -42,7 +42,8 @@ class RfTransceiver:
     def get_received_powers(self):
         for bs_idx, bs in enumerate(self.sinr_cochannel_bs_list):
             path_loss = bs.get_path_loss(bs.coords, self.coords, bs.carrier_frequency)
-            self.received_powers[bs_idx] = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
+            rx_power = (self.bandwidth / bs.bandwidth * bs.tx_power / path_loss)
+            self.received_powers[bs_idx] = rx_power if rx_power > DEFAULT_RX_POWER_SENSITIVITY else 0
 
     def get_received_sinrs(self):
         self.get_received_powers()
@@ -50,7 +51,7 @@ class RfTransceiver:
             rx_powers = self.received_powers
             interferences = np.sum(rx_powers) - rx_powers[bs_idx]
             self.received_sinrs[bs_idx] = rx_powers[bs_idx] / (interferences + self.noise_power)
-            self.received_snrs[bs_idx] = rx_powers[bs_idx] / self.noise_power
+            # self.received_snrs[bs_idx] = rx_powers[bs_idx] / self.noise_power
 
     def get_received_snrs(self):
         self.get_received_powers()
@@ -87,6 +88,12 @@ class RfTransceiver:
             interferences = np.sum(rx_powers) - rx_powers[bs_idx]
             rx_sinr[bs_idx] = rx_powers[bs_idx] / (interferences + self.noise_power)
 
+        if sinr_condition is None:
+            self.sinr_cochannel_bs_list = list(compress(self.stations_list, self.bs_sinr_cochannel_mask))
+            self.received_sinrs = rx_sinr[self.bs_sinr_cochannel_mask]
+            self.received_powers = rx_powers[self.bs_sinr_cochannel_mask]
+            return
+
         for idx, sinr in enumerate(rx_sinr):
             if sinr < sinr_condition:
                 self.bs_sinr_cochannel_mask[idx] = False
@@ -95,7 +102,7 @@ class RfTransceiver:
         self.received_sinrs = rx_sinr[self.bs_sinr_cochannel_mask]
         self.received_powers = rx_powers[self.bs_sinr_cochannel_mask]
 
-    def set_available_base_stations(self, stations_list, sinr_condition=DEFAULT_SINR_SENSITIVITY_LEVEL, frequency_condition=None):
+    def set_available_base_stations(self, stations_list, sinr_condition=None, frequency_condition=None):
         self.stations_list = stations_list
         self.update_cochannel_bs_mask(frequency_condition)
         self.update_sufficient_sinr_cochannel_bs_mask(sinr_condition)
@@ -128,12 +135,12 @@ class UserRfTransceiver(RfTransceiver):
         self.get_path_loss = None
 
 
-class MacroRfTransceiver(RfTransceiver):
+class StationRfTransceiver(RfTransceiver):
     def __init__(self, coords: Coords3d, t_power=DRONE_TX_POWER_RF, bandwidth=USER_BANDWIDTH, bs_id=None,
                  user_id=None, carrier_frequency=DEFAULT_CARRIER_FREQ_MBS, station_type=StationType.UMa,
                  macro_type=StationType.UMa):
         super().__init__(coords, t_power=t_power, bandwidth=bandwidth, bs_id=bs_id, user_id=user_id,
-                         carrier_frequency=carrier_frequency, station_type=station_type)
+                         carrier_frequency=carrier_frequency)
         if macro_type == StationType.UMa:
             self.get_path_loss = UmaCellular.get_path_loss
         elif macro_type == StationType.UMi:

@@ -18,24 +18,21 @@ class ObstaclesMobilityModel(UserSpatialModel):
     seeks = []
     loaded_duration = 0
 
-    def __init__(self, time_step=TIME_STEP, number_of_users=NUM_OF_USERS):
+    def __init__(self, number_of_users=NUM_OF_USERS):
         self.obstacles_objects = get_madrid_buildings()
         self.users = []
         self.current_time = 0
-        self.users_coords = None
-        self.time_step = time_step
-        self.auxiliary_updates = []
-        self.base_stations_coords = None
         self.n_users = number_of_users
+        self.speed_divisor = USER_SPEED_DIVISOR
 
     def reset_users(self, speed_divisor=1):
         self.current_time = 0
         self.load_model(save_directory_in=self.loaded, duration=self.loaded_duration, max_num_users=self.n_users,
                         speed_divisor=speed_divisor)
 
-    def update_users_locations(self):
+    def update_users_locations(self, time_step):
         for _user in self.users:
-            if _user.update_location(self.time_step):
+            if _user.update_location(time_step):
                 with open(os.path.join(self.loaded, f"user_{_user.id}"), 'rb') as _file:
                     _file.seek(self.seeks[_user.id])
                     _wayps = np.load(_file, allow_pickle=True)
@@ -51,12 +48,13 @@ class ObstaclesMobilityModel(UserSpatialModel):
             if not self.generate_model_step():
                 return
 
-    def generate_model_step(self, time_step=None, static_users=False):
-        self.current_time += self.time_step
+    def generate_model_step(self, time_step=TIME_STEP, static_users=False):
+        self.current_time += time_step / 1000
         if self.current_time > self.loaded_duration > 0:
             return False
         if not static_users:
-            self.update_users_locations()
+            self.update_users_locations(time_step / 1000)
+        return True
 
     def get_obstacles(self):
         return self.obstacles_objects.obstaclesList
@@ -67,8 +65,7 @@ class ObstaclesMobilityModel(UserSpatialModel):
     def load_model(self, folder_name='mobility_model_saved',
                    save_name="default", duration=60 * 60 * 2, max_num_users=None, save_directory_in=None,
                    speed_divisor=USER_SPEED_DIVISOR):
-        save_directory = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)),
-                                      folder_name, save_name) if not save_directory_in else save_directory_in
+        save_directory = os.path.join(os.getcwd(), "environment", folder_name,  save_name) if not save_directory_in else save_directory_in
         self.seeks = []
         n_users = len(os.listdir(save_directory))
         self.n_users = min(n_users, max_num_users if max_num_users else n_users)
@@ -107,7 +104,6 @@ if __name__ == '__main__':
     time1 = timee.time()
     mobility_model.load_model(save_name='extended_4_madrids_500_users', max_num_users=20)
     mobility_model.generate_model_step(TIME_STEP)
-    mobility_model.generate_plot()
     # mobility_model.generate_model(duration=60 * 60 * 4)
     # print(timee.time() - time1)
     #
